@@ -50,7 +50,13 @@ UPDATE tsconfig.json (562 bytes)
 UPDATE package.json (2013 bytes)
 UPDATE nest-cli.json (1030 bytes)
 ```
-# 2. Resource Setup
+
+## Dependency
+
+`pnpm i @apollo/gateway @apollo/subgraph @nestjs/apollo @nestjs/graphql apollo-server-express graphql`
+
+
+# 2. Resource Setup for user
 
 
 - `nest g resource`
@@ -75,14 +81,7 @@ UPDATE apps/users/src/users.module.ts (336 bytes)
 > - copy all and paste in the src folder and replace all
 > - delete users.controller.ts also test file
 
-
-# Dependency
-
-`pnpm i @apollo/gateway @apollo/subgraph @nestjs/apollo @nestjs/graphql apollo-server-express graphql`
-
-
-
-## Basic Setup
+## Basic Setup 
 
 - user.entity.ts
 ```ts
@@ -195,20 +194,7 @@ mutation {
 ```
 - Create a user by running the provided mutation
 
-### Write the query to fetch
-
-```graphql
-query {
-    user(id: "123") {
-        id
-        email
-        password
-    }
-}
-
-```
-- It will fetch the user
-### Write the query to fetch
+### Write the query to fetch by id
 
 ```graphql
 query {
@@ -221,3 +207,166 @@ query {
 
 ```
 - Fetch users by running the provided queries
+
+# 3. Resource Setup for post
+
+- `nest g resource`
+```bash
+? Which project would you like to generate to? post
+? What name would you like to use for this resource (plural, e.g., "users")? posts
+? What transport layer do you use? GraphQL (code first)
+? Would you like to generate CRUD entry points? Yes
+CREATE apps/post/src/posts/posts.module.ts (233 bytes)
+CREATE apps/post/src/posts/posts.resolver.ts (1144 bytes)
+CREATE apps/post/src/posts/posts.resolver.spec.ts (544 bytes)
+CREATE apps/post/src/posts/posts.service.ts (651 bytes)
+CREATE apps/post/src/posts/posts.service.spec.ts (471 bytes)
+CREATE apps/post/src/posts/dto/create-post.input.ts (203 bytes)
+CREATE apps/post/src/posts/dto/update-post.input.ts (251 bytes)
+CREATE apps/post/src/posts/entities/post.entity.ts (194 bytes)
+UPDATE apps/post/src/post.module.ts (329 bytes)
+```
+
+- `Posts` > `Posts`
+> - copy all and paste in the src folder and replace all
+> - delete posts.controller.ts also test file
+
+## Basic Setup
+
+- post.entity.ts
+```ts
+import { ObjectType, Field, ID } from '@nestjs/graphql';
+@ObjectType()
+export class Post {
+    @Field(() => ID)
+    id: string;
+
+    @Field()
+    body: string;
+
+    @Field()
+    authorId: string;
+}
+```
+
+- dto -> create-post.input.ts
+```ts
+import { InputType, Field } from '@nestjs/graphql';
+
+@InputType()
+export class CreatePostInput {
+    @Field()
+    id: string;
+
+    @Field()
+    body: string;
+
+    @Field()
+    authorId: string;
+}
+```
+
+
+- `post.module.ts`
+```ts
+imports: [
+    GraphQLModule.forRoot<ApolloFederationDriverConfig>({
+        driver: ApolloFederationDriver,
+        autoSchemaFile: {
+            federation: 2,
+        },
+    }),
+]
+```
+
+
+- `Post.service.ts`
+```ts
+@Injectable()
+export class PostsService {
+    private readonly posts: Post[] = [];
+
+    create(createPostInput: CreatePostInput) {
+        this.posts.push(createPostInput);
+        return createPostInput;
+    }
+
+    findAll() {
+        return this.posts;
+    }
+
+    findOne(id: string) {
+        return this.posts.find((post:Post) => post.id === id);
+    }
+}
+```
+- `Post.resolver.ts`
+```ts
+@Resolver(() => Post)
+export class PostsResolver {
+    constructor(private readonly postsService: PostsService) {}
+
+    @Mutation(() => Post)
+    createPost(@Args('createPostInput') createPostInput: CreatePostInput) {
+        return this.postsService.create(createPostInput);
+    }
+
+    @Query(() => [Post], { name: 'posts' })
+    findAll() {
+        return this.postsService.findAll();
+    }
+
+    @Query(() => Post, { name: 'post' })
+    findOne(@Args('id') id: string) {
+        return this.postsService.findOne(id);
+    }
+}
+```
+
+## Test in GraphQL Playground
+
+Go to - http://localhost:3001/graphql
+
+### Write the mutation query
+
+```graphql
+mutation {
+    createPost(
+        createPostInput: { authorId: "123", id: "234", body: "Text of the post" }
+    ) {
+        id
+        authorId
+        body
+    }
+}
+```
+- Create a user by running the provided mutation
+
+### Write the query to fetch by id
+
+```graphql
+query {
+    post(id: "234") {
+        id
+        authorId
+
+        body
+    }
+}
+```
+
+- Fetch users by id running the provided queries
+
+### Write the query to fetch all
+
+```graphql
+query {
+    posts{
+        id
+        authorId
+        body
+    }
+}
+```
+
+- Fetch users running the provided queries
