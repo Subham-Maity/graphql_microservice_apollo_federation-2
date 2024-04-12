@@ -1,73 +1,223 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# 1. Setup
+- `nest new gateway`
+```bash
+⚡  We will scaffold your app in a few seconds..
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+? Which package manager would you ❤️  to use? pnpm
+```
+-  `cd gateway`
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+- `nest g app`
+```bash
+? What name would you like to use for the app? users
+DELETE src
+DELETE test
+CREATE apps/gateway/tsconfig.app.json (231 bytes)
+CREATE apps/gateway/src/app.controller.spec.ts (639 bytes)
+CREATE apps/gateway/src/app.controller.ts (286 bytes)
+CREATE apps/gateway/src/app.module.ts (259 bytes)
+CREATE apps/gateway/src/app.service.ts (150 bytes)
+CREATE apps/gateway/src/main.ts (216 bytes)
+CREATE apps/gateway/test/app.e2e-spec.ts (654 bytes)
+CREATE apps/gateway/test/jest-e2e.json (192 bytes)
+CREATE apps/users/tsconfig.app.json (229 bytes)
+CREATE apps/users/src/main.ts (222 bytes)
+CREATE apps/users/src/users.controller.ts (298 bytes)
+CREATE apps/users/src/users.controller.spec.ts (665 bytes)
+CREATE apps/users/src/users.module.ts (273 bytes)
+CREATE apps/users/src/users.service.ts (152 bytes)
+CREATE apps/users/test/jest-e2e.json (192 bytes)
+CREATE apps/users/test/app.e2e-spec.ts (662 bytes)
+UPDATE tsconfig.json (562 bytes)
+UPDATE package.json (2015 bytes)
+UPDATE nest-cli.json (800 bytes)
+```
+- Move to the main folder
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- `nest g app`
+```bash
+? What name would you like to use for the app? post
+CREATE apps/post/tsconfig.app.json (228 bytes)
+CREATE apps/post/src/main.ts (219 bytes)
+CREATE apps/post/src/post.controller.ts (292 bytes)
+CREATE apps/post/src/post.controller.spec.ts (652 bytes)
+CREATE apps/post/src/post.module.ts (266 bytes)
+CREATE apps/post/src/post.service.ts (151 bytes)
+CREATE apps/post/test/jest-e2e.json (192 bytes)
+CREATE apps/post/test/app.e2e-spec.ts (658 bytes)
+UPDATE tsconfig.json (562 bytes)
+UPDATE package.json (2013 bytes)
+UPDATE nest-cli.json (1030 bytes)
+```
+# 2. Resource Setup
 
-## Installation
+
+- `nest g resource`
 
 ```bash
-$ pnpm install
+? Which project would you like to generate to? users
+? What name would you like to use for this resource (plural, e.g., "users")? users
+? What transport layer do you use? GraphQL (code first)
+? Would you like to generate CRUD entry points? Yes
+CREATE apps/users/src/users/users.module.ts (233 bytes)
+CREATE apps/users/src/users/users.resolver.ts (1144 bytes)
+CREATE apps/users/src/users/users.resolver.spec.ts (544 bytes)
+CREATE apps/users/src/users/users.service.ts (651 bytes)
+CREATE apps/users/src/users/users.service.spec.ts (471 bytes)
+CREATE apps/users/src/users/dto/create-user.input.ts (203 bytes)
+CREATE apps/users/src/users/dto/update-user.input.ts (251 bytes)
+CREATE apps/users/src/users/entities/user.entity.ts (194 bytes)
+UPDATE apps/users/src/users.module.ts (336 bytes)
 ```
 
-## Running the app
+- `Users` > `Users`
+> - copy all and paste in the src folder and replace all
+> - delete users.controller.ts also test file
 
-```bash
-# development
-$ pnpm run start
 
-# watch mode
-$ pnpm run start:dev
+# Dependency
 
-# production mode
-$ pnpm run start:prod
+`pnpm i @apollo/gateway @apollo/subgraph @nestjs/apollo @nestjs/graphql apollo-server-express graphql`
+
+
+
+## Basic Setup
+
+- user.entity.ts
+```ts
+import { ObjectType, Field, ID, Directive } from '@nestjs/graphql';
+
+@ObjectType()
+@Directive('@key(fields: "id")')
+export class User {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  email: string;
+
+  @Field()
+  password: string;
+}
 ```
 
-## Test
+- dto -> create-user.input.ts
+```ts
+import { InputType, Field } from '@nestjs/graphql';
 
-```bash
-# unit tests
-$ pnpm run test
+@InputType()
+export class CreateUserInput {
+  @Field()
+  id: string;
 
-# e2e tests
-$ pnpm run test:e2e
+  @Field()
+  email: string;
 
-# test coverage
-$ pnpm run test:cov
+  @Field()
+  password: string;
+}
 ```
 
-## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- `user.module.ts`
+```ts
+imports: [
+    GraphQLModule.forRoot<ApolloFederationDriverConfig>({
+        driver: ApolloFederationDriver,
+        autoSchemaFile: {
+            federation: 2,
+        },
+    }),
+]
+```
 
-## Stay in touch
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- `User.service.ts`
+```ts
+@Injectable()
+export class UsersService {
+  private readonly users: User[] = [];
 
-## License
+  create(createUserInput: CreateUserInput) {
+    this.users.push(createUserInput);
+    return createUserInput;
+  }
 
-Nest is [MIT licensed](LICENSE).
+  findAll() {
+    return this.users;
+  }
+
+  findOne(id: string) {
+    return this.users.find((user) => user.id === id);
+  }
+}
+```
+- `User.resolver.ts`
+```ts
+@Resolver(() => User)
+export class UsersResolver {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Mutation(() => User)
+  createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
+    return this.usersService.create(createUserInput);
+  }
+
+  @Query(() => [User], { name: 'users' })
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Query(() => User, { name: 'user' })
+  findOne(@Args('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+}
+```
+## Test in GraphQL Playground
+
+Go to - http://localhost:3000/graphql
+
+### Write the mutation query
+
+```graphql
+mutation {
+    createUser(
+        createUserInput: { id: "123", email: "test@example.com", password: "test" }
+) {
+        id
+        email
+        password
+    }
+}
+```
+- Create a user by running the provided mutation
+
+### Write the query to fetch
+
+```graphql
+query {
+    user(id: "123") {
+        id
+        email
+        password
+    }
+}
+
+```
+- It will fetch the user
+### Write the query to fetch
+
+```graphql
+query {
+    user(id: "123") {
+        id
+        email
+        password
+    }
+}
+
+```
+- Fetch users by running the provided queries
