@@ -10,6 +10,7 @@ import {
 import { Post } from './entities/post.entity';
 import { CreatePostInput } from './dto/create-post.input';
 import {PostsService} from "./post.service";
+import {User} from "./entities/user.entity";
 
 
 @Resolver(() => Post)
@@ -29,5 +30,9 @@ export class PostsResolver {
   @Query(() => Post, { name: 'post' })
   findOne(@Args('id') id: string) {
     return this.postsService.findOne(id);
+  }
+  @ResolveField(() => User)
+  user(@Parent() post: Post): any {
+    return { __typename: 'User', id: post.authorId };
   }
 }

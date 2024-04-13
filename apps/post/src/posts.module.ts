@@ -8,6 +8,7 @@ import {
 } from '@nestjs/apollo';
 
 import {PostsService} from "./post.service";
+import {UsersResolver} from "./users.resolver";
 
 
 @Module({
@@ -19,6 +20,6 @@ import {PostsService} from "./post.service";
       },
     }),
   ],
-  providers: [PostsResolver, PostsService],
+  providers: [PostsResolver, PostsService ,UsersResolver],
 })
 export class PostsModule {}

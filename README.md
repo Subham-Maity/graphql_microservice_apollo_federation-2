@@ -7,7 +7,10 @@ TOC
 3. [Resource Setup for post](#3-resource-setup-for-post)
     - [Basic Setup](#basic-setup)
     - [Test in GraphQL Playground](#test-in-graphql-playground-1)
-
+4. [Connect Gateway](#4-connect-gateway)
+5. [User and Post Connect](#5-user-and-post-connect-)
+   - [Basic Setup](#basic-setup-1)
+   - [Test in GraphQL Playground](#test-in-graphql-playground-3)
 
 # 1. Setup
 
@@ -59,7 +62,6 @@ TOC
 import { ObjectType, Field, ID, Directive } from '@nestjs/graphql';
 
 @ObjectType()
-@Directive('@key(fields: "id")')
 export class User {
   @Field(() => ID)
   id: string;
@@ -334,7 +336,7 @@ query {
 - Fetch users running the provided queries
 
 
-# 3. Connect Gateway
+# 4. Connect Gateway
 
 
 In your `gateway` -> `app.module.ts`
@@ -376,3 +378,200 @@ Now you can perform query and mutation for both post and user
 
 Note: Start both user and post-server also 
 > `pnpm start:dev post` and `pnpm start:dev user`
+
+
+# 5. User and Post Connect 
+## Basic Setup
+- change in `user.entity.ts` 
+```ts
+@Directive('@key(fields: "id")')
+```
+> - This directive is used to specify that the User type is a key entity in a federated GraphQL schema
+> - fields: "id" argument indicates that the id field is the unique identifier for each User.
+
+- `users.resolver.ts`
+```ts
+@ResolveReference()
+resolveReference(reference: { __typename: string; id: string }): User {
+   return this.usersService.findOne(reference.id);
+}
+```
+#### [More Info](./helper1.md)
+- inside `post` folder `src` -> `entities` -> `user.entity.ts`
+
+```ts
+import { Directive, Field, ID, ObjectType } from '@nestjs/graphql';
+import { Post } from './post.entity';
+
+@ObjectType()
+@Directive('@key(fields: "id")')
+export class User {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => [Post])
+  posts?: Post[];
+}
+```
+
+
+- entities -> `post.entity.ts`
+
+```ts
+import { ObjectType, Field, ID } from '@nestjs/graphql';
+import {User} from "./user.entity";
+@ObjectType()
+export class Post {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  body: string;
+
+  @Field()
+  authorId: string;
+  
+  //Add this 
+  @Field(() => User)
+  user?: User;
+}
+```
+
+In you `post.resolver.ts` add another resolver 
+
+```ts
+
+@ResolveField(() => User)
+  user(@Parent() post: Post): any {
+    return { __typename: 'User', id: post.authorId };
+}
+```
+
+
+- Now add another `user.resolver.ts` inside posts -> src
+- `post` -> `src` -> `users.resolver.ts`
+
+```ts
+import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { Post } from './entities/post.entity';
+import { User } from './entities/user.entity';
+import { PostsService } from './posts.service';
+
+@Resolver(() => User)
+export class UsersResolver {
+    constructor(private readonly postsService: PostsService) {}
+
+    @ResolveField(() => [Post])
+    posts(@Parent() user: User): Post[] {
+        return this.postsService.forAuthor(user.id);
+    }
+}
+```
+- Now add this in `post.service.ts`
+```ts
+forAuthor(authorId: string) {
+    return this.posts.filter((post) => post.authorId === authorId);
+}
+```
+
+- Now add `UserResolver.ts` in the `PostModule.ts`
+
+```ts
+@Module({
+   imports: [
+      GraphQLModule.forRoot<ApolloFederationDriverConfig>({
+         driver: ApolloFederationDriver,
+         autoSchemaFile: {
+            federation: 2,
+         },
+      }),
+   ],
+   providers: [PostsResolver, PostsService ,UsersResolver],
+})
+```
+
+
+## Test in GraphQL Playground
+
+http://localhost:3002/graphql
+
+- Create a user 
+```graphql
+mutation {
+    createUser(
+        createUserInput: { id: "123", email: "test@example.com", password: "test" }
+) {
+        id
+        email
+        password
+    }
+}
+```
+- Create post 1 with the same Author id
+
+```graphql
+mutation {
+    createPost(
+        createPostInput: { authorId: "123", id: "235", body: "Text of the post 1" }
+    ) {
+        id
+        authorId
+        body
+    }
+}
+```
+- Create post 2 with the same Author id
+```graphql
+mutation {
+    createPost(
+        createPostInput: { authorId: "123", id: "234", body: "Text of the post 2" }
+    ) {
+        id
+        authorId
+        body
+    }
+}
+```
+
+- Now let's query our user with post
+
+```graphql
+query {
+    user(id: "123") {
+        id
+        email
+        password
+        posts {
+          id
+          authorId
+          body
+        }
+    }
+}
+```
+
+Response 
+
+```json
+{
+  "data": {
+    "user": {
+      "id": "123",
+      "email": "test@example.com",
+      "password": "test",
+      "posts": [
+        {
+          "id": "235",
+          "authorId": "123",
+          "body": "Text of the post 1"
+        },
+        {
+          "id": "234",
+          "authorId": "123",
+          "body": "Text of the post 2"
+        }
+      ]
+    }
+  }
+}
+```
