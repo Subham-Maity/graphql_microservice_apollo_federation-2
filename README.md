@@ -1,4 +1,16 @@
+TOC
+
+1. [Setup](#1-setup)
+2. [Resource Setup for user](#2-resource-setup-for-user)
+    - [Basic Setup](#basic-setup-)
+    - [Test in GraphQL Playground](#test-in-graphql-playground)
+3. [Resource Setup for post](#3-resource-setup-for-post)
+    - [Basic Setup](#basic-setup)
+    - [Test in GraphQL Playground](#test-in-graphql-playground-1)
+
+
 # 1. Setup
+
 - `nest new gateway`
 ```bash
 ⚡  We will scaffold your app in a few seconds..
@@ -320,3 +332,47 @@ query {
 ```
 
 - Fetch users running the provided queries
+
+
+# 3. Connect Gateway
+
+
+In your `gateway` -> `app.module.ts`
+
+```ts
+imports: [
+   GraphQLModule.forRoot<ApolloGatewayDriverConfig>({
+      driver: ApolloGatewayDriver,
+      gateway: {
+         supergraphSdl: new IntrospectAndCompose({
+            subgraphs: [
+               {
+                  name: 'users',
+                  url: 'http://localhost:3000/graphql', //this one for user server
+               },
+               {
+                  name: 'posts',
+                  url: 'http://localhost:3001/graphql',//this one for post server
+               },
+            ],
+         }),
+      },
+   }),
+]
+```
+
+in `main.ts`
+
+```ts
+const app = await NestFactory.create(AppModule, { cors: true });
+await app.listen(3002);//gateway server
+```
+
+## Test in GraphQL Playground
+
+Go to - http://localhost:3000/graphql
+
+Now you can perform query and mutation for both post and user 
+
+Note: Start both user and post-server also 
+> `pnpm start:dev post` and `pnpm start:dev user`
