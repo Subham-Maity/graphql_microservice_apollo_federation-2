@@ -11,6 +11,7 @@ import { Post } from './entities/post.entity';
 import { CreatePostInput } from './dto/create-post.input';
 import {PostsService} from "./post.service";
 import {User} from "./entities/user.entity";
+import {CurrentUser} from "./current-user.decorator";
 
 
 @Resolver(() => Post)
@@ -23,7 +24,8 @@ export class PostsResolver {
   }
 
   @Query(() => [Post], { name: 'posts' })
-  findAll() {
+  findAll(@CurrentUser() user: User) {
+    console.log(user);
     return this.postsService.findAll();
   }
 

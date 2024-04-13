@@ -11,6 +11,8 @@ TOC
 5. [User and Post Connect](#5-user-and-post-connect-)
    - [Basic Setup](#basic-setup-1)
    - [Test in GraphQL Playground](#test-in-graphql-playground-3)
+5. [Authorization and Context](#6-authorization-and-context)
+6. [Apply auth for all](#7-apply-auth-for-all)
 
 # 1. Setup
 
@@ -575,3 +577,179 @@ Response
   }
 }
 ```
+# 6. Authorization and Context
+
+- make a `auth.context.ts` inside gateway -> src
+```ts
+import { UnauthorizedException } from '@nestjs/common';
+
+export const authContext = ({ req }) => {
+    if (req.headers?.authorization) {
+        // Validate jwt
+        return { user: { id: '123' } };
+    }
+    throw new UnauthorizedException();
+};
+```
+- in `app.module.ts`
+```ts
+  imports: [
+   GraphQLModule.forRoot<ApolloGatewayDriverConfig>({
+      //add this
+      server: {
+         context: authContext
+      },
+   }),
+]
+```
+
+now if you query 
+
+```graphql
+query {
+    user(id: "123") {
+        id
+        email
+        password
+        posts {
+          id
+          authorId
+          body
+        }
+    }
+}
+```
+response
+```json
+{
+  "error": {
+    "errors": [
+      {
+        "message": "Context creation failed: Unauthorized",
+        "extensions": {
+          "code": "INTERNAL_SERVER_ERROR",
+          "stacktrace": [
+            "UnauthorizedException: Unauthorized"
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+- Now you can add under the playground HTTP HEADERS 
+
+```json
+{
+  "Authorization" : "123"
+}
+```
+
+Now it will work
+
+
+# 7. Apply auth for all
+Add this part in gateway -> app.module.ts
+```ts
+ buildService({ url }) {
+          return new RemoteGraphQLDataSource({
+            url,
+            willSendRequest({ request, context }) {
+              request.http.headers.set(
+                'user',
+                context.user ? JSON.stringify(context.user) : null,
+              );
+            },
+          });
+}
+```
+Entire code
+````ts
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import {GraphQLModule} from "@nestjs/graphql";
+import {ApolloGatewayDriver, ApolloGatewayDriverConfig} from "@nestjs/apollo";
+import {IntrospectAndCompose, RemoteGraphQLDataSource} from "@apollo/gateway";
+import {authContext} from "./auth.context";
+
+@Module({
+  imports: [
+    GraphQLModule.forRoot<ApolloGatewayDriverConfig>({
+      driver: ApolloGatewayDriver,
+      server: {
+      context: authContext
+      },
+      gateway: {
+        supergraphSdl: new IntrospectAndCompose({
+          subgraphs: [
+            {
+              name: 'users',
+              url: 'http://localhost:3000/graphql',
+            },
+            {
+              name: 'posts',
+              url: 'http://localhost:3001/graphql',
+            },
+          ],
+        }),
+        buildService({ url }) {
+          return new RemoteGraphQLDataSource({
+            url,
+            willSendRequest({ request, context }) {
+              request.http.headers.set(
+                  'user',
+                  context.user ? JSON.stringify(context.user) : null,
+              );
+            },
+          });
+        },
+      },
+
+    }),
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+
+````
+
+
+- Let's test this 
+
+
+Make a decorator inside post -> src -> current-user.decorator.ts
+
+```ts
+import { createParamDecorator } from '@nestjs/common';
+import { GraphQLExecutionContext } from '@nestjs/graphql';
+
+export const CurrentUser = createParamDecorator(
+        (_data: any, ctx: GraphQLExecutionContext) => {
+           try {
+              const headers = ctx.getArgs()[2].req.headers;
+              if (headers.user) {
+                 return JSON.parse(headers.user);
+              }
+           } catch (err) {
+              return null;
+           }
+        },
+);
+```
+
+Using that decorator, you can get the current user
+```ts
+@Query(() => [Post], { name: 'posts' })
+findAll(@CurrentUser() user: User) {
+   console.log(user);
+   return this.postsService.findAll();
+}
+```
+
+This is how you can get the current user
+
+
+
